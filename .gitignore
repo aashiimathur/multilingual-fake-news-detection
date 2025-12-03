@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Data & Embeddings
+*.npy
+*.bin
+*.index
+*.faiss
+*.h5
+*.pt
+*.ckpt
+*.parquet
+
+# Temp files
+tmp_*
+*.tmp
+*.log
+
+# Models downloaded locally
+models/
+huggingface/
+cache/
