@@ -8,7 +8,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 # =========================
-# PATHS (YOUR ORIGINAL ONES)
+# PATHS 
 # =========================
 EMB_PATH = "C:/Users/DELL/OneDrive/Documents/SEM 5/EDAI-5/edai5-rag/data/fact_embeddings.npy"
 PARQUET_PATH = "C:/Users/DELL/OneDrive/Documents/SEM 5/EDAI-5/edai5-rag/data/fact_base_clean.parquet"

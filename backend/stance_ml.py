@@ -35,7 +35,7 @@ LABEL_MAP = {0: "contradict", 1: "neutral", 2: "support"}
 
 
 # ---------------------------------------------------------
-# 🔥 NEW RULE: Subject detection — fallback for vague claims
+# Subject detection — fallback for vague claims
 # ---------------------------------------------------------
 def is_low_information_claim(claim: str) -> bool:
     tokens = word_tokenize(claim.lower())
@@ -119,14 +119,14 @@ def classify_stance_ml(claim: str, evidence_list):
 # ---------------------------------------------------------
 def aggregate_ml_verdict(evidences):
 
-    # 🔥 empty OR vague → fallback
+    # empty OR vague → fallback
     if not evidences:
         return "USE_ML_MODEL", 0.0
 
     sims = [e["semantic_similarity"] for e in evidences]
     avg_sim = sum(sims) / len(sims)
 
-    # 🔥 irrelevant evidence → fallback
+    # irrelevant evidence → fallback
     if avg_sim < 0.18:
         return "USE_ML_MODEL", avg_sim * 100
 
@@ -135,7 +135,7 @@ def aggregate_ml_verdict(evidences):
 
     best_conf = max(e["stance_confidence"] for e in evidences)
 
-    # 🔥 NLI model unsure → fallback
+    # NLI model unsure → fallback
     # fallback if strongest NLI probability < 60%
     best_nli_conf = max(e["nli_confidence"] for e in evidences)
     if best_nli_conf < 60:
