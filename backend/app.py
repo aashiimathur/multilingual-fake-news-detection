@@ -2,11 +2,11 @@
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-
 from backend.retrieval import retrieve_top_facts
 from backend.reranker import rerank_with_cross_encoder
 from backend.utils import normalize_text, extract_text_from_pdf
 from backend.stance_ml import classify_stance_ml, aggregate_ml_verdict
+from backend.ml_fallback import MLFallbackClassifier
 from backend.translate import (
     detect_lang,
     safe_lang,
@@ -14,8 +14,7 @@ from backend.translate import (
     translate_from_english
 )
 
-import traceback
-
+fallback_classifier = MLFallbackClassifier()
 app = FastAPI()
 
 app.add_middleware(
@@ -24,7 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 class ClaimRequest(BaseModel):
     claim: str
 
@@ -79,16 +77,28 @@ def verify(req: ClaimRequest):
         # 6) Aggregate verdict
         verdict, conf = aggregate_ml_verdict(stance_results)
 
-        # ML fallback trigger
+        # --- Fallback Detector (stronger) ---
+        weak_evidence = (
+            len(stance_results) == 0 or
+            max([s.get("stance_confidence", 0) for s in stance_results]) < 60 or
+            all(s.get("stance") == "neutral" for s in stance_results) or
+            (all(s.get("stance") == "support" for s in stance_results) and max([d.get("score", 0) for d in reranked]) < 0.30)
+        )
+
         if verdict == "USE_ML_MODEL":
-            reason_text = translate_from_english("Low confidence in RAG evidence. Use ML model.", user_lang)
+            fb = fallback_classifier.predict(claim_en)
+
+            # ML fallback should always provide its own reasoning
+            fb_reason = fb.get("reason", "ML fallback model used due to weak evidence.")
+            fb_reason = translate_from_english(fb_reason, user_lang)
+
             return {
-                "verdict": "USE_ML_MODEL",
-                "confidence": conf,
-                "reason": reason_text,
+                "verdict": fb["fallback_pred"],
+                "confidence": fb["fallback_confidence"],
+                "reason": fb_reason,
                 "evidence": []
             }
-
+    
         # 7) pick best sentence (english) and translate it
         best_item = max(stance_results, key=lambda x: x.get("stance_confidence", 0))
         best_sentence_en = best_item.get("best_sentence", "") or ""
